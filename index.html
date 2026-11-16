@@ -91,9 +91,14 @@ table.t tr.tot td{background:#E6F7F5;font-weight:700}
 .note{font-size:10pt;font-style:italic;color:var(--grey);margin:3mm 0 3.5mm}
 .close{margin:0}
 .obs{margin:3mm 0 0;font-size:10.5pt;white-space:pre-line;overflow-wrap:anywhere}
-.obs.vide{display:none}
-.direct .obs.vide{display:block}
+.vide{display:none}
+.direct .vide{display:block}
 .sig{margin:5mm 0 0 84.7mm}
+.pro{font-size:9.5pt;font-style:italic;color:var(--grey);margin-top:1mm}
+.direct .pro .tl:empty::before{content:"Inscription en cours d’année ?";color:#b3bcc0}
+.direct #p_civ:empty::before{content:"Civilité";color:#b3bcc0}
+#p_civ:not(:empty)::after,.direct #p_civ:empty::after{content:" "}
+table.t td.c .ed{display:inline-block;min-width:1.2em}
 .sig p{margin:0;min-height:1em}
 .sig{position:relative}
 .sig .space{height:60pt;position:relative}
@@ -186,7 +191,7 @@ dialog{max-height:92vh;overflow:auto}
 #rendu .ctl,#rendu .ov,#rendu .addbtn{display:none!important}
 #rendu .ed,#rendu .selwrap{background:none!important;outline:none!important}
 #rendu .ed:empty::before{content:""!important}
-#rendu .obs.vide{display:none!important}
+#rendu .vide{display:none!important}
 #dlgPdf h3{margin:0 0 8px;font-size:18px}
 #pdfEtat{margin:0 0 12px;color:#46545a;font-size:14px}
 #pdfBtns{display:flex;flex-direction:column;gap:8px}
@@ -200,7 +205,7 @@ dialog{max-height:92vh;overflow:auto}
   #jsmsg,#aide{display:none!important}
   body{background:#fff}
   .form,.topbar,.ctl,#sugg{display:none!important}
-  .obs.vide{display:none!important}
+  .vide{display:none!important}
   body{display:block;height:auto}
   .app{display:block;height:auto}
   .ed,.selwrap{background:none!important;outline:none!important}
@@ -234,11 +239,13 @@ dialog{max-height:92vh;overflow:auto}
     </div>
 
     <h2>Établie au nom de</h2>
+    <label>Entreprise ou organisme (facultatif)<input id="i_org" placeholder="Ex. : Aide sociale à l'enfance" autocomplete="off"></label>
     <div class="two civ">
-      <label>Civilité<select id="i_civ"><option>Madame</option><option>Monsieur</option></select></label>
+      <label>Civilité<select id="i_civ"><option value="">(aucune)</option><option>Madame</option><option>Monsieur</option></select></label>
       <label>Prénom<input id="i_dpre" placeholder="Prénom" autocomplete="off"></label>
     </div>
     <label>NOM<input id="i_dnom" placeholder="NOM" autocomplete="off" style="text-transform:uppercase"></label>
+    <p class="hint">Pour une entreprise ou un service, indiquez l'organisme : la personne est alors imprimée « À l'attention de… » (civilité, prénom et nom facultatifs). Pour un particulier, laissez l'organisme vide.</p>
     <label>Adresse<input id="i_adr1" placeholder="Numéro et rue" autocomplete="off"></label>
     <label>Code postal et ville<input id="i_adr2" placeholder="32550 VILLE" autocomplete="off"></label>
     <p class="hint">Des suggestions apparaissent en tapant : communes de France sans connexion, rues via la Base Adresse Nationale (connexion internet requise). Vous pouvez toujours saisir librement. Choisir d'abord la commune affine les rues proposées.</p>
@@ -287,7 +294,8 @@ dialog{max-height:92vh;overflow:auto}
           <div class="right">
             <p style="margin-bottom:5mm">Pavie, le <span class="ed" id="p_date" data-k="date" data-ph="5 octobre 2026"></span></p>
             <p><span class="u">Attestation établie au nom de</span> :</p>
-            <p class="dest"><span class="selwrap"><span id="p_civ"></span><select class="ov" id="o_civ"><option>Madame</option><option>Monsieur</option></select></span> <span class="ed" id="p_dpre" data-k="dpre" data-ph="Prénom"></span> <span class="ed nomU" id="p_dnom" data-k="dnom" data-ph="NOM"></span></p>
+            <p class="dest vide" id="p_orgw"><span class="ed" id="p_org" data-k="org" data-ph="Entreprise ou organisme"></span></p>
+            <p class="dest" id="p_perw"><span id="p_att"></span><span class="selwrap"><span id="p_civ"></span><select class="ov" id="o_civ"><option value="">(aucune)</option><option>Madame</option><option>Monsieur</option></select></span><span class="ed" id="p_dpre" data-k="dpre" data-ph="Prénom"></span> <span class="ed nomU" id="p_dnom" data-k="dnom" data-ph="NOM"></span></p>
             <p><span class="ed" id="p_adr1" data-k="adr1" data-ph="Numéro et rue"></span></p>
             <p><span class="ed" id="p_adr2" data-k="adr2" data-ph="Code postal VILLE"></span></p>
           </div>
@@ -352,6 +360,9 @@ dialog{max-height:92vh;overflow:auto}
   <h4>Saison par défaut</h4>
   <input type="text" id="pSaison" placeholder="2026-2027" autocomplete="off" style="width:160px;padding:6px;font:inherit;font-size:13px;border:1px solid #b9c2c6;border-radius:5px">
 
+  <h4>Licence</h4>
+  <label>Montant de la licence incluse dans les tarifs, non proratisée (€)<input type="number" min="0" step="0.01" id="pLic"></label>
+
   <h4>Tarifs proposés dans les menus</h4>
   <div id="tList"></div>
   <div class="dlgbtns" style="margin-top:6px">
@@ -407,7 +418,7 @@ dialog{max-height:92vh;overflow:auto}
   ];
   var KEY="jcp_attestation_tarifs_v1", KEYMODE="jcp_attestation_mode_v1";
   var KEYP="jcp_attestation_params_v1";
-  var P_DEFAUT={saison:"2026-2027", v:2, signataires:[{nom:"Stéphanie DISCORS",fonction:"Présidente",art:"La"},{nom:"Aurélie CAROLELLI",fonction:"Vice-présidente",art:"La"},{nom:"Fatema MULLER",fonction:"Trésorière",art:"La"}], sig:{mode:"cert",style:0,cachet:true}};
+  var P_DEFAUT={saison:"2026-2027", v:2, licence:46, signataires:[{nom:"Stéphanie DISCORS",fonction:"Présidente",art:"La"},{nom:"Aurélie CAROLELLI",fonction:"Vice-présidente",art:"La"},{nom:"Fatema MULLER",fonction:"Trésorière",art:"La"}], sig:{mode:"cert",style:0,cachet:true}};
   var STYLES=[{nom:"Élégante",fam:"JCP Great Vibes"},{nom:"Fluide",fam:"JCP Dancing"},{nom:"Naturelle",fam:"JCP Homemade"},{nom:"Classique",fam:"JCP Alex"},{nom:"Signature fine",fam:"JCP Delafield"},{nom:"Calligraphiée",fam:"JCP Doulaise"},{nom:"Appuyée",fam:"JCP Dafoe"},{nom:"Rétro",fam:"JCP Yellowtail"},{nom:"Stylo",fam:"JCP Caveat"},{nom:"Rapide",fam:"JCP Reenie"},{nom:"Pointue",fam:"JCP Kristi"},{nom:"Ronde",fam:"JCP Parisienne"}];
   var PAGE_PX=296*96/25.4, PAGE_W=210*96/25.4;
 
@@ -416,15 +427,15 @@ dialog{max-height:92vh;overflow:auto}
   var T=loadTarifs(), P=loadParams(), S=nouvelEtat();
 
   function nouvelEtat(){
-    return {saison:P.saison, date:dateDuJour(), civ:"Madame", dpre:"", dnom:"", adr1:"", adr2:"", obs:"",
-            signI:0, sigMode:P.sig.mode, sigStyle:P.sig.style, cachet:P.sig.cachet, rows:[{nom:"",prenom:"",tarif:0}]};
+    return {saison:P.saison, date:dateDuJour(), org:"", civ:"Madame", dpre:"", dnom:"", adr1:"", adr2:"", obs:"",
+            signI:0, sigMode:P.sig.mode, sigStyle:P.sig.style, cachet:P.sig.cachet, rows:[{nom:"",prenom:"",tarif:0,m:10,mt:""}]};
   }
   function loadTarifs(){
     try{ var r=JSON.parse(localStorage.getItem(KEY)); if(Array.isArray(r)&&r.length) return r; }catch(e){}
     return JSON.parse(JSON.stringify(TARIFS_DEFAUT));
   }
   function loadParams(){
-    try{ var r=JSON.parse(localStorage.getItem(KEYP)); if(r&&r.saison&&Array.isArray(r.signataires)&&r.signataires.length){ if(!r.sig) r.sig=JSON.parse(JSON.stringify(P_DEFAUT.sig)); r.signataires.forEach(function(g){ if(!g.art) g.art=/e\s*$/i.test(g.fonction||"")?"La":"Le"; });
+    try{ var r=JSON.parse(localStorage.getItem(KEYP)); if(r&&r.saison&&Array.isArray(r.signataires)&&r.signataires.length){ if(!r.sig) r.sig=JSON.parse(JSON.stringify(P_DEFAUT.sig)); if(!(r.licence>=0)) r.licence=P_DEFAUT.licence; r.signataires.forEach(function(g){ if(!g.art) g.art=/e\s*$/i.test(g.fonction||"")?"La":"Le"; });
       if((r.v||0)<P_DEFAUT.v){ P_DEFAUT.signataires.forEach(function(d){ if(!r.signataires.some(function(g){ return g.nom.trim().toLowerCase()===d.nom.toLowerCase(); })) r.signataires.push(JSON.parse(JSON.stringify(d))); }); r.v=P_DEFAUT.v; try{ localStorage.setItem(KEYP,JSON.stringify(r)); }catch(e){} }
       return r; } }catch(e){}
     return JSON.parse(JSON.stringify(P_DEFAUT));
@@ -458,6 +469,26 @@ dialog{max-height:92vh;overflow:auto}
   }
   function euro(x){ return x.toLocaleString("fr-FR",{minimumFractionDigits:2,maximumFractionDigits:2})+"\u00A0€"; }
   function tarifDe(r){ return T[Math.min(r.tarif,T.length-1)]||{label:"",prix:0}; }
+  var MOIS=["septembre","octobre","novembre","décembre","janvier","février","mars","avril","mai","juin"];
+  function num(x){ var v=parseFloat(String(x==null?"":x).replace(/\s|\u00A0/g,"").replace(",",".")); return isNaN(v)?0:v; }
+  function fmt(x){ return x.toLocaleString("fr-FR",{minimumFractionDigits:2,maximumFractionDigits:2}); }
+  function calc(r){
+    var full=tarifDe(r).prix, L=P.licence, m=Math.max(1,Math.min(10,parseInt(r.m,10)||10));
+    if(m>=10||full<=L) return {unit:Math.round(full*100)/100, pro:false, m:m};
+    var cp=Math.round((full-L)*m/10*100)/100;
+    return {unit:Math.round((L+cp)*100)/100, pro:true, m:m, cp:cp};
+  }
+  function surcharge(r){ return String(r.mt==null?"":r.mt).trim()!==""; }
+  function ligneTotal(r){ return surcharge(r)?Math.round(num(r.mt)*100)/100:calc(r).unit; }
+  function optionsMois(sel,m){
+    sel.innerHTML="";
+    MOIS.forEach(function(nm,i){ var o=document.createElement("option"); o.value=10-i; o.textContent=i===0?"Saison complète":"Inscription au 1er "+nm+" ("+(10-i)+"/10e)"; sel.appendChild(o); });
+    sel.value=String(Math.max(1,Math.min(10,parseInt(m,10)||10)));
+  }
+  function textePro(r){
+    var c=calc(r); if(!c.pro) return "";
+    return "Inscription au 1er "+MOIS[10-c.m]+" : cotisation proratisée à "+c.m+"/10e ("+euro(c.cp)+") + licence ("+euro(P.licence)+")";
+  }
   function setText(el,v){ if(document.activeElement!==el && el.textContent!==v) el.textContent=v; }
 
   /* ============ Saisie directe : champs éditables ============ */
@@ -480,7 +511,7 @@ dialog{max-height:92vh;overflow:auto}
   }
 
   /* ============ Formulaire (colonne de gauche) ============ */
-  var CHAMPS={saison:"i_saison",date:"i_date",dpre:"i_dpre",dnom:"i_dnom",adr1:"i_adr1",adr2:"i_adr2",obs:"i_obs"};
+  var CHAMPS={saison:"i_saison",date:"i_date",org:"i_org",dpre:"i_dpre",dnom:"i_dnom",adr1:"i_adr1",adr2:"i_adr2",obs:"i_obs"};
   Object.keys(CHAMPS).forEach(function(k){
     $(CHAMPS[k]).addEventListener("input",function(){ S[k]=this.value; maj(); });
   });
@@ -503,12 +534,16 @@ dialog{max-height:92vh;overflow:auto}
       var c=document.createElement("div"); c.className="card";
       c.innerHTML='<div class="ttl">Adhérent '+(i+1)+'</div><button type="button" class="x" title="Supprimer cet adhérent">×</button>'
         +'<div class="two"><label>Nom<input class="in-nom" autocomplete="off"></label><label>Prénom<input class="in-pre" autocomplete="off"></label></div>'
-        +'<label>Tarif<select class="in-tar"></select></label>';
-      var nom=c.querySelector(".in-nom"), pre=c.querySelector(".in-pre"), tar=c.querySelector(".in-tar");
-      nom.value=r.nom; pre.value=r.prenom; optionsTarifs(tar,r.tarif);
+        +'<label>Tarif<select class="in-tar"></select></label>'
+        +'<label>Date d’inscription (cotisation au prorata, licence non proratisée)<select class="in-m"></select></label>'
+        +'<label>Montant (€) – laisser vide pour le calcul automatique<input class="in-mt" inputmode="decimal" autocomplete="off"></label>';
+      var nom=c.querySelector(".in-nom"), pre=c.querySelector(".in-pre"), tar=c.querySelector(".in-tar"), mo=c.querySelector(".in-m"), mt=c.querySelector(".in-mt");
+      nom.value=r.nom; pre.value=r.prenom; optionsTarifs(tar,r.tarif); optionsMois(mo,r.m); mt.value=r.mt||"";
       nom.addEventListener("input",function(){ r.nom=nom.value; maj(); });
       pre.addEventListener("input",function(){ r.prenom=pre.value; maj(); });
       tar.addEventListener("change",function(){ r.tarif=parseInt(tar.value,10); maj(); });
+      mo.addEventListener("change",function(){ r.m=parseInt(mo.value,10); maj(); });
+      mt.addEventListener("input",function(){ r.mt=mt.value; maj(); });
       c.querySelector(".x").addEventListener("click",function(){ supprimer(i); });
       box.appendChild(c);
     });
@@ -539,9 +574,15 @@ dialog{max-height:92vh;overflow:auto}
       var sl=document.createElement("span"); sl.className="sl";
       td2.appendChild(w); td2.appendChild(document.createElement("br")); td2.appendChild(sl);
 
+      var pw=document.createElement("div"); pw.className="pro vide"; var pws=document.createElement("span"); pws.className="selwrap"; var ptl=document.createElement("span"); ptl.className="tl"; var psel=document.createElement("select"); psel.className="ov"; optionsMois(psel,r.m);
+      psel.addEventListener("change",function(){ r.m=parseInt(psel.value,10); maj(); });
+      pws.appendChild(ptl); pws.appendChild(psel); pw.appendChild(pws); td2.appendChild(pw);
       var td3=document.createElement("td"); td3.className="c";
+      var ma=document.createElement("span"); ma.className="ed"; ma.setAttribute("data-ph","0,00");
+      rendreEditable(ma,function(v){ r.mt=v; maj(); }); ma.addEventListener("blur",function(){ maj(); });
+      var eu=document.createElement("span"); eu.textContent="\u00A0€"; td3.appendChild(ma); td3.appendChild(eu);
       tr.appendChild(td1); tr.appendChild(td2); tr.appendChild(td3);
-      tr._nom=nom; tr._pre=pre; tr._tl=tl; tr._sel=sel; tr._sl=sl; tr._m=td3; tr._r=r;
+      tr._nom=nom; tr._pre=pre; tr._tl=tl; tr._sel=sel; tr._sl=sl; tr._ma=ma; tr._pw=pw; tr._ptl=ptl; tr._psel=psel; tr._r=r;
       tb.appendChild(tr);
     });
     appliquerEditable();
@@ -551,7 +592,7 @@ dialog{max-height:92vh;overflow:auto}
   /* ============ Mise à jour de l'aperçu (sans perdre le curseur) ============ */
   function maj(){
     var n=S.rows.length, pl=n>1, saison=S.saison.trim();
-    ["saison","date","dpre","dnom","adr1","adr2","obs"].forEach(function(k){ setText($("p_"+k),S[k]); });
+    ["saison","date","org","dpre","dnom","adr1","adr2","obs"].forEach(function(k){ setText($("p_"+k),S[k]); });
     var sg=SIG(); $("p_signom").textContent=sg.nom; $("p_sigfonc").textContent=((sg.art?sg.art+" ":"")+sg.fonction).trim()+(sg.fonction?",":""); $("o_sign").value=String(S.signI); $("i_sign").value=String(S.signI);
     /* signature : certificat, manuscrite ou aucune */
     var sgz=$("sig"); sgz.classList.toggle("m-none",S.sigMode==="none"); sgz.classList.toggle("m-manu",S.sigMode==="manu"); sgz.classList.toggle("m-cert",S.sigMode==="cert");
@@ -568,6 +609,11 @@ dialog{max-height:92vh;overflow:auto}
     ["i_cachet","o_cachet"].forEach(function(id){ $(id).checked=S.cachet; });
     $("lblStyle").style.display=manu?"":"none"; $("o_sstyle").style.display=manu?"":"none";
     $("p_civ").textContent=S.civ; $("o_civ").value=S.civ;
+    var org=!!S.org.trim(), per=!!(S.civ||S.dpre.trim()||S.dnom.trim());
+    $("p_orgw").classList.toggle("vide",!org);
+    $("p_perw").classList.toggle("vide",!per);
+    $("p_perw").classList.toggle("dest",!org);
+    $("p_att").textContent=org?"À l'attention de ":"";
     $("p_obsw").classList.toggle("vide",!S.obs.trim());
     $("g_art").textContent=pl?"les":"la";
     $("g_s1").textContent=pl?"s":""; $("g_s2").textContent=pl?"s":"";
@@ -575,20 +621,22 @@ dialog{max-height:92vh;overflow:auto}
     $("g_saison").textContent=saison||"…";
     var total=0;
     Array.prototype.forEach.call($("tbody").children,function(tr){
-      var r=tr._r, t=tarifDe(r); total+=t.prix;
+      var r=tr._r, t=tarifDe(r), lt=ligneTotal(r), cc=calc(r); total+=lt;
       setText(tr._nom,r.nom); setText(tr._pre,r.prenom);
       tr._tl.textContent=t.label; tr._sel.value=String(Math.min(r.tarif,T.length-1));
       tr._sl.textContent="Saison "+(saison||"…");
-      tr._m.textContent=euro(t.prix);
+      setText(tr._ma,fmt(lt));
+      tr._ptl.textContent=surcharge(r)?"":textePro(r); tr._psel.value=String(cc.m); tr._pw.classList.toggle("vide",!cc.pro||surcharge(r));
     });
-    $("total").textContent=euro(total);
+    $("total").textContent=euro(Math.round(total*100)/100);
+    var cards=$("fRows").children; S.rows.forEach(function(r,i){ var c=cards[i]; if(c){ var x=c.querySelector(".in-mt"); if(x) x.placeholder=fmt(calc(r).unit); } });
     uneSeulePage(); ajusteAffichage();
   }
 
   /* ============ Ajouter / supprimer ============ */
   function ajouter(){
     var last=S.rows[S.rows.length-1];
-    S.rows.push({nom:last?last.nom:"",prenom:"",tarif:last?last.tarif:0});
+    S.rows.push({nom:last?last.nom:"",prenom:"",tarif:last?last.tarif:0,m:last?last.m:10,mt:""});
     rendreForm(); rendreTable();
     if(direct()){ var l=$("tbody").lastChild; if(l) l._pre.focus(); }
     else { var p=document.querySelectorAll(".in-pre"); if(p.length) p[p.length-1].focus(); }
@@ -606,10 +654,10 @@ dialog{max-height:92vh;overflow:auto}
   function uneSeulePage(){
     var sheet=$("sheet"), mw=$("mainwrap"), m=$("main"), foot=sheet.querySelector(".foot");
     m.style.transform=""; m.style.width=""; m.style.transformOrigin=""; mw.style.height="";
-    var ov=$("p_obsw"), cache=ov.classList.contains("vide");
-    if(cache) ov.style.display="none";
+    var vides=[].slice.call(m.querySelectorAll(".vide"));
+    vides.forEach(function(n){ n.style.display="none"; });
     var h=m.offsetHeight;
-    if(cache) ov.style.display="";
+    vides.forEach(function(n){ n.style.display=""; });
     var dispo=PAGE_PX-parseFloat(getComputedStyle(sheet).paddingTop)-foot.offsetHeight-8;
     var z=Math.min(1,dispo/h);
     if(z<1){ m.style.width=(100/z)+"%"; m.style.transformOrigin="0 0"; m.style.transform="scale("+z+")"; mw.style.height=(h*z)+"px"; }
@@ -762,7 +810,7 @@ dialog{max-height:92vh;overflow:auto}
     var manque=[];
     if(!S.saison.trim()) manque.push("saison");
     if(!S.date.trim()) manque.push("date");
-    if(!S.dpre.trim()||!S.dnom.trim()) manque.push("prénom et nom du destinataire");
+    if(!S.org.trim()&&(!S.dpre.trim()||!S.dnom.trim())) manque.push("destinataire");
     if(!S.adr1.trim()||!S.adr2.trim()) manque.push("adresse");
     S.rows.forEach(function(r,i){ if(!r.nom.trim()||!r.prenom.trim()) manque.push("adhérent "+(i+1)); });
     if(manque.length){ demander("Champs vides : "+manque.join(", ")+".\nGénérer quand même ?",lancerPdf,"Générer quand même"); return; }
@@ -882,9 +930,9 @@ dialog{max-height:92vh;overflow:auto}
   });
 
   /* ============ Paramètres : saison, tarifs, signataires ============ */
-  var dlg=$("dlgTarifs"), tmp=[], tmpS=[], tmpSaison="";
+  var dlg=$("dlgTarifs"), tmp=[], tmpS=[], tmpSaison="", tmpLic=46;
   function rendreDialog(){
-    $("pSaison").value=tmpSaison;
+    $("pSaison").value=tmpSaison; $("pLic").value=tmpLic;
     var box=$("tList"); box.innerHTML="";
     tmp.forEach(function(t,i){
       var row=document.createElement("div"); row.className="trow";
@@ -911,8 +959,9 @@ dialog{max-height:92vh;overflow:auto}
     });
   }
   $("pSaison").addEventListener("input",function(){ tmpSaison=this.value; });
+  $("pLic").addEventListener("input",function(){ tmpLic=this.value; });
   $("btnTarifs").addEventListener("click",function(){
-    tmp=JSON.parse(JSON.stringify(T)); tmpS=JSON.parse(JSON.stringify(P.signataires)); tmpSaison=P.saison;
+    tmp=JSON.parse(JSON.stringify(T)); tmpS=JSON.parse(JSON.stringify(P.signataires)); tmpSaison=P.saison; tmpLic=P.licence;
     rendreDialog(); dlg.showModal();
   });
   $("tAdd").addEventListener("click",function(){ tmp.push({label:"",prix:0}); rendreDialog(); });
@@ -928,7 +977,7 @@ dialog{max-height:92vh;overflow:auto}
     var anciens=S.rows.map(function(r){ return tarifDe(r).label; });
     var ancienSig=libSig(SIG()), ancienneSaison=P.saison;
     T=propre; saveTarifs();
-    P={v:P_DEFAUT.v, saison:tmpSaison.trim(), signataires:sigs, sig:P.sig}; saveParams();
+    P={v:P_DEFAUT.v, saison:tmpSaison.trim(), licence:(parseFloat(tmpLic)>=0?parseFloat(tmpLic):P_DEFAUT.licence), signataires:sigs, sig:P.sig}; saveParams();
     S.rows.forEach(function(r,i){ var k=T.findIndex(function(t){ return t.label===anciens[i]; }); r.tarif=k>=0?k:0; });
     var ks=P.signataires.findIndex(function(g){ return libSig(g)===ancienSig; }); S.signI=ks>=0?ks:0;
     if(S.saison===ancienneSaison) S.saison=P.saison;
