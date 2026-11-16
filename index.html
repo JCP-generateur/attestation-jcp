@@ -95,9 +95,11 @@ table.t tr.tot td{background:#E6F7F5;font-weight:700}
 .direct .vide{display:block}
 .sig{margin:5mm 0 0 84.7mm}
 .pro{font-size:9.5pt;font-style:italic;color:var(--grey);margin-top:1mm}
-.direct .pro .tl:empty::before{content:"Inscription en cours d’année ?";color:#b3bcc0}
+.pro .mo{display:none!important}
+.direct .pro .mo{display:inline-block!important;font-style:normal;color:#0a8b7b;cursor:pointer;margin-left:8px;font-size:9pt}
+#rendu .pro .mo{display:none!important}
 .direct #p_civ:empty::before{content:"Civilité";color:#b3bcc0}
-#p_civ:not(:empty)::after,.direct #p_civ:empty::after{content:" "}
+#p_civ:not(:empty),.direct #p_civ:empty{margin-right:.3em}
 table.t td.c .ed{display:inline-block;min-width:1.2em}
 .sig p{margin:0;min-height:1em}
 .sig{position:relative}
@@ -215,6 +217,7 @@ dialog{max-height:92vh;overflow:auto}
   .pvbox{width:210mm!important;height:296mm!important;margin:0!important}
   .sheet{transform:none!important;box-shadow:none}
 }
+@media print{.direct .pro .mo,.pro .mo{display:none!important}}
 </style>
 </head>
 <body>
@@ -428,7 +431,7 @@ dialog{max-height:92vh;overflow:auto}
 
   function nouvelEtat(){
     return {saison:P.saison, date:dateDuJour(), org:"", civ:"Madame", dpre:"", dnom:"", adr1:"", adr2:"", obs:"",
-            signI:0, sigMode:P.sig.mode, sigStyle:P.sig.style, cachet:P.sig.cachet, rows:[{nom:"",prenom:"",tarif:0,m:10,mt:""}]};
+            signI:0, sigMode:P.sig.mode, sigStyle:P.sig.style, cachet:P.sig.cachet, rows:[{nom:"",prenom:"",tarif:0,m:10,mt:"",pt:""}]};
   }
   function loadTarifs(){
     try{ var r=JSON.parse(localStorage.getItem(KEY)); if(Array.isArray(r)&&r.length) return r; }catch(e){}
@@ -536,14 +539,16 @@ dialog{max-height:92vh;overflow:auto}
         +'<div class="two"><label>Nom<input class="in-nom" autocomplete="off"></label><label>Prénom<input class="in-pre" autocomplete="off"></label></div>'
         +'<label>Tarif<select class="in-tar"></select></label>'
         +'<label>Date d’inscription (cotisation au prorata, licence non proratisée)<select class="in-m"></select></label>'
-        +'<label>Montant (€) – laisser vide pour le calcul automatique<input class="in-mt" inputmode="decimal" autocomplete="off"></label>';
-      var nom=c.querySelector(".in-nom"), pre=c.querySelector(".in-pre"), tar=c.querySelector(".in-tar"), mo=c.querySelector(".in-m"), mt=c.querySelector(".in-mt");
-      nom.value=r.nom; pre.value=r.prenom; optionsTarifs(tar,r.tarif); optionsMois(mo,r.m); mt.value=r.mt||"";
+        +'<label>Montant (€) – laisser vide pour le calcul automatique<input class="in-mt" inputmode="decimal" autocomplete="off"></label>'
+        +'<label>Texte de proratisation (laisser vide pour le texte automatique)<input class="in-pt" autocomplete="off"></label>';
+      var nom=c.querySelector(".in-nom"), pre=c.querySelector(".in-pre"), tar=c.querySelector(".in-tar"), mo=c.querySelector(".in-m"), mt=c.querySelector(".in-mt"), pt=c.querySelector(".in-pt");
+      nom.value=r.nom; pre.value=r.prenom; optionsTarifs(tar,r.tarif); optionsMois(mo,r.m); mt.value=r.mt||""; pt.value=r.pt||"";
       nom.addEventListener("input",function(){ r.nom=nom.value; maj(); });
       pre.addEventListener("input",function(){ r.prenom=pre.value; maj(); });
       tar.addEventListener("change",function(){ r.tarif=parseInt(tar.value,10); maj(); });
-      mo.addEventListener("change",function(){ r.m=parseInt(mo.value,10); maj(); });
+      mo.addEventListener("change",function(){ r.m=parseInt(mo.value,10); r.pt=""; pt.value=""; maj(); });
       mt.addEventListener("input",function(){ r.mt=mt.value; maj(); });
+      pt.addEventListener("input",function(){ r.pt=pt.value; maj(); });
       c.querySelector(".x").addEventListener("click",function(){ supprimer(i); });
       box.appendChild(c);
     });
@@ -574,15 +579,18 @@ dialog{max-height:92vh;overflow:auto}
       var sl=document.createElement("span"); sl.className="sl";
       td2.appendChild(w); td2.appendChild(document.createElement("br")); td2.appendChild(sl);
 
-      var pw=document.createElement("div"); pw.className="pro vide"; var pws=document.createElement("span"); pws.className="selwrap"; var ptl=document.createElement("span"); ptl.className="tl"; var psel=document.createElement("select"); psel.className="ov"; optionsMois(psel,r.m);
-      psel.addEventListener("change",function(){ r.m=parseInt(psel.value,10); maj(); });
-      pws.appendChild(ptl); pws.appendChild(psel); pw.appendChild(pws); td2.appendChild(pw);
+      var pw=document.createElement("div"); pw.className="pro vide";
+      var ptx=document.createElement("span"); ptx.className="ed"; ptx.setAttribute("data-ph","Texte (ex. inscription en cours d’année)");
+      rendreEditable(ptx,function(v){ r.pt=v; maj(); }); ptx.addEventListener("blur",function(){ maj(); });
+      var pws=document.createElement("span"); pws.className="selwrap ctl mo"; var ptl=document.createElement("span"); ptl.textContent="▾ date"; var psel=document.createElement("select"); psel.className="ov"; optionsMois(psel,r.m);
+      psel.addEventListener("change",function(){ r.m=parseInt(psel.value,10); r.pt=""; maj(); });
+      pws.appendChild(ptl); pws.appendChild(psel); pw.appendChild(ptx); pw.appendChild(pws); td2.appendChild(pw);
       var td3=document.createElement("td"); td3.className="c";
       var ma=document.createElement("span"); ma.className="ed"; ma.setAttribute("data-ph","0,00");
       rendreEditable(ma,function(v){ r.mt=v; maj(); }); ma.addEventListener("blur",function(){ maj(); });
       var eu=document.createElement("span"); eu.textContent="\u00A0€"; td3.appendChild(ma); td3.appendChild(eu);
       tr.appendChild(td1); tr.appendChild(td2); tr.appendChild(td3);
-      tr._nom=nom; tr._pre=pre; tr._tl=tl; tr._sel=sel; tr._sl=sl; tr._ma=ma; tr._pw=pw; tr._ptl=ptl; tr._psel=psel; tr._r=r;
+      tr._nom=nom; tr._pre=pre; tr._tl=tl; tr._sel=sel; tr._sl=sl; tr._ma=ma; tr._pw=pw; tr._ptx=ptx; tr._psel=psel; tr._r=r;
       tb.appendChild(tr);
     });
     appliquerEditable();
@@ -626,17 +634,17 @@ dialog{max-height:92vh;overflow:auto}
       tr._tl.textContent=t.label; tr._sel.value=String(Math.min(r.tarif,T.length-1));
       tr._sl.textContent="Saison "+(saison||"…");
       setText(tr._ma,fmt(lt));
-      tr._ptl.textContent=surcharge(r)?"":textePro(r); tr._psel.value=String(cc.m); tr._pw.classList.toggle("vide",!cc.pro||surcharge(r));
+      var tp=String(r.pt||"").trim()?r.pt:(surcharge(r)?"":textePro(r)); setText(tr._ptx,tp); tr._psel.value=String(cc.m); tr._pw.classList.toggle("vide",!tp);
     });
     $("total").textContent=euro(Math.round(total*100)/100);
-    var cards=$("fRows").children; S.rows.forEach(function(r,i){ var c=cards[i]; if(c){ var x=c.querySelector(".in-mt"); if(x) x.placeholder=fmt(calc(r).unit); } });
+    var cards=$("fRows").children; S.rows.forEach(function(r,i){ var c=cards[i]; if(c){ var x=c.querySelector(".in-mt"); var y=c.querySelector(".in-pt"); if(y) y.placeholder=textePro(r)||"Texte libre (facultatif)"; if(x) x.placeholder=fmt(calc(r).unit); } });
     uneSeulePage(); ajusteAffichage();
   }
 
   /* ============ Ajouter / supprimer ============ */
   function ajouter(){
     var last=S.rows[S.rows.length-1];
-    S.rows.push({nom:last?last.nom:"",prenom:"",tarif:last?last.tarif:0,m:last?last.m:10,mt:""});
+    S.rows.push({nom:last?last.nom:"",prenom:"",tarif:last?last.tarif:0,m:last?last.m:10,mt:"",pt:""});
     rendreForm(); rendreTable();
     if(direct()){ var l=$("tbody").lastChild; if(l) l._pre.focus(); }
     else { var p=document.querySelectorAll(".in-pre"); if(p.length) p[p.length-1].focus(); }
